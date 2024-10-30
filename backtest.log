@@ -1,0 +1,86 @@
+2024-10-30 18:14:14,284:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:20:06,975:INFO:Starting backtest for station kmia over the past 30 days.
+2024-10-30 18:20:06,976:ERROR:An error occurred during backtesting: Either 'recent' or both 'start_time' and 'end_time' must be provided.
+2024-10-30 18:39:57,002:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:39:57,003:INFO:Fetching station metadata.
+2024-10-30 18:39:57,432:INFO:Station timezone: America/New_York
+2024-10-30 18:39:57,433:INFO:Fetching training data.
+2024-10-30 18:39:58,863:INFO:Model training completed.
+2024-10-30 18:39:59,540:ERROR:Unexpected error: 'int' object has no attribute 'mean'
+2024-10-30 18:41:35,858:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:41:35,859:INFO:Fetching station metadata.
+2024-10-30 18:41:36,255:INFO:Station timezone: America/New_York
+2024-10-30 18:41:36,255:INFO:Fetching training data.
+2024-10-30 18:41:37,540:INFO:Model training completed.
+2024-10-30 18:42:00,470:INFO:MAE: 2.63, RMSE: 3.03
+2024-10-30 18:42:31,159:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:42:31,161:INFO:Fetching station metadata.
+2024-10-30 18:42:31,521:INFO:Station timezone: America/Chicago
+2024-10-30 18:42:31,521:INFO:Fetching training data.
+2024-10-30 18:42:33,023:INFO:Model training completed.
+2024-10-30 18:42:55,573:INFO:MAE: 8.73, RMSE: 8.96
+2024-10-30 18:45:54,718:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:45:54,719:INFO:Fetching station metadata.
+2024-10-30 18:45:55,117:INFO:Station timezone: America/New_York
+2024-10-30 18:45:55,117:INFO:Fetching training data.
+2024-10-30 18:45:56,564:ERROR:Missing columns: ['Pressure', 'Precipitation', 'Cloud_Cover', 'Solar_Radiation', 'Visibility', 'Dew_Point']
+2024-10-30 18:45:56,565:ERROR:Insufficient data for model training.
+2024-10-30 18:46:09,482:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:46:09,483:INFO:Fetching station metadata.
+2024-10-30 18:46:10,057:INFO:Station timezone: America/New_York
+2024-10-30 18:46:10,057:INFO:Fetching training data.
+2024-10-30 18:46:11,416:INFO:Model training completed.
+2024-10-30 18:46:35,682:INFO:MAE: 2.63, RMSE: 3.03
+2024-10-30 18:48:12,942:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:48:12,943:INFO:Fetching station metadata.
+2024-10-30 18:48:13,309:INFO:Station timezone: America/Chicago
+2024-10-30 18:48:13,309:INFO:Fetching training data.
+2024-10-30 18:48:14,651:INFO:Model training completed.
+2024-10-30 18:48:36,972:INFO:MAE: 5.77, RMSE: 6.54
+2024-10-30 18:51:10,235:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:51:10,236:INFO:Fetching station metadata.
+2024-10-30 18:51:10,628:INFO:Station timezone: America/New_York
+2024-10-30 18:51:10,629:INFO:Fetching training data.
+2024-10-30 18:51:11,965:ERROR:Missing columns: ['Pressure', 'Precipitation', 'Cloud_Cover', 'Solar_Radiation', 'Visibility', 'Dew_Point']
+2024-10-30 18:51:11,965:ERROR:Insufficient data for model training.
+2024-10-30 18:51:29,039:INFO:Starting backtest for the past 30 days.
+2024-10-30 18:51:29,041:INFO:Fetching station metadata.
+2024-10-30 18:51:29,536:INFO:Station timezone: America/New_York
+2024-10-30 18:51:29,536:INFO:Fetching training data.
+2024-10-30 18:51:30,890:INFO:Model training completed.
+2024-10-30 19:36:59,403:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:36:59,404:INFO:Fetching station metadata.
+2024-10-30 19:36:59,746:ERROR:Cannot proceed without station metadata.
+2024-10-30 19:37:05,638:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:37:05,638:INFO:Fetching station metadata.
+2024-10-30 19:37:05,993:INFO:Station timezone: America/Chicago
+2024-10-30 19:37:05,993:INFO:Fetching training data.
+2024-10-30 19:37:07,504:INFO:Model training completed.
+2024-10-30 19:37:37,180:INFO:MAE: 8.73, RMSE: 8.96
+2024-10-30 19:49:35,908:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:49:35,909:INFO:Fetching station metadata.
+2024-10-30 19:49:36,333:INFO:Station timezone: America/New_York
+2024-10-30 19:49:36,333:INFO:Fetching training data.
+2024-10-30 19:49:38,019:INFO:Model training completed.
+2024-10-30 19:50:07,800:INFO:MAE: 2.63, RMSE: 3.03
+2024-10-30 19:53:38,181:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:53:38,182:INFO:Fetching station metadata.
+2024-10-30 19:53:38,570:INFO:Station timezone: America/New_York
+2024-10-30 19:53:38,570:INFO:Fetching training data.
+2024-10-30 19:53:39,857:ERROR:Missing columns: ['Pressure', 'Precipitation', 'Cloud_Cover', 'Solar_Radiation', 'Visibility', 'Dew_Point']
+2024-10-30 19:53:39,858:ERROR:Insufficient data for model training.
+2024-10-30 19:54:35,748:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:54:35,750:INFO:Fetching station metadata.
+2024-10-30 19:54:36,081:ERROR:Cannot proceed without station metadata.
+2024-10-30 19:54:47,871:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:54:47,871:INFO:Fetching station metadata.
+2024-10-30 19:54:48,180:ERROR:Cannot proceed without station metadata.
+2024-10-30 19:54:52,044:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:54:52,045:INFO:Fetching station metadata.
+2024-10-30 19:54:52,361:ERROR:Cannot proceed without station metadata.
+2024-10-30 19:54:56,237:INFO:Starting backtest for the past 30 days.
+2024-10-30 19:54:56,237:INFO:Fetching station metadata.
+2024-10-30 19:54:56,594:INFO:Station timezone: America/New_York
+2024-10-30 19:54:56,594:INFO:Fetching training data.
+2024-10-30 19:54:58,057:INFO:Model training completed.
+2024-10-30 19:55:44,912:INFO:MAE: 2.67, RMSE: 3.14

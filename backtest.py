@@ -1,204 +1,284 @@
-# backtest.py
+import sys
+import logging
+import traceback
+from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime, timedelta
 
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-import datetime
-from weather_utils import get_weather_data
-from decimal import Decimal, ROUND_HALF_UP
 import numpy as np
+import pytz
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
 
-# Include the official data in a dictionary
-official_data = {
-    'Date': [
-        'Oct 1', 'Oct 2', 'Oct 3', 'Oct 4', 'Oct 5', 'Oct 6', 'Oct 7', 'Oct 8', 'Oct 9', 'Oct 10',
-        'Oct 11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15', 'Oct 16', 'Oct 17', 'Oct 18', 'Oct 19', 'Oct 20',
-        'Oct 21', 'Oct 22', 'Oct 23', 'Oct 24', 'Oct 25', 'Oct 26', 'Oct 27', 'Oct 28', 'Oct 29', 'Oct 30'
-    ],
-    'High_Temperature': [
-        88, 87, 89, 89, 90, 89, 88, 87, 86, 85,
-        84, 85, 86, 86, 87, 87, 86, 85, 84, 85,
-        85, 84, 85, 85, 85, 86, 83, 83, 85, 84
-    ]
-}
+from weather_utils import get_weather_data, get_station_metadata
 
-# Convert official data to a DataFrame
-official_df = pd.DataFrame(official_data)
-official_df['Date'] = pd.to_datetime('2024 ' + official_df['Date'])
+# Configure logging
+logging.basicConfig(
+    filename='backtest.log',
+    level=logging.INFO,
+    format='%(asctime)s:%(levelname)s:%(message)s'
+)
 
-# Prompt the user to enter the station ID
-station_id = input("Enter your station ID (e.g., KMIA): ").strip().upper()
+def get_station_id():
+    """Prompt user for station ID and validate it."""
+    station_id = input("Enter your station ID (e.g., KMIA): ").strip().upper()
+    if len(station_id) != 4:
+        logging.error("Station ID must be exactly 4 characters long.")
+        print("Error: Station ID must be exactly 4 characters long.")
+        sys.exit(1)
+    return station_id
 
-# Validate the station ID
-if len(station_id) != 4:
-    raise ValueError("Station ID must be exactly 4 characters long.")
+def prepare_features(data, required_columns, tz):
+    """
+    Prepare features for model training or prediction.
 
-# Function to perform backtesting
-def backtest_predictions(station_id, backtest_days=30):
-    print(f"Starting backtest for the past {backtest_days} days...")
+    Args:
+        data (pd.DataFrame): Raw weather data.
+        required_columns (list): Columns required for processing.
+        tz (pytz.timezone): Timezone of the station.
 
-    # Initialize lists for actual and predicted temperatures
-    actual_temps = []
-    predicted_temps = []
-    dates = []
+    Returns:
+        pd.DataFrame: Processed data with engineered features.
+    """
+    # Ensure required columns are present
+    missing_cols = [col for col in required_columns if col not in data.columns]
+    if missing_cols:
+        logging.error(f"Missing columns: {missing_cols}")
+        return pd.DataFrame()
 
-    # Fetch extended training data
-    training_start_date = datetime.datetime.now() - datetime.timedelta(days=60)  # Use last 60 days
-    training_end_date = datetime.datetime.now() - datetime.timedelta(days=1)
-
-    # Fetch training data using get_weather_data
-    training_data = get_weather_data(
-        station_id,
-        start_time=training_start_date.strftime('%Y%m%d0000'),
-        end_time=training_end_date.strftime('%Y%m%d2359')
-    )
-
-    if training_data is None or training_data.empty:
-        print("Unable to fetch training data.")
-        return
-
-    # Rename columns to match those used during training
-    training_data.rename(columns={
+    # Rename columns for consistency
+    rename_map = {
         'Humidity': 'Humidity_Avg',
-        'Wind_Speed': 'Wind_Speed_Avg'
-    }, inplace=True)
+        'Wind_Speed': 'Wind_Speed_Avg',
+        'Temp_High_6hr': 'Temp_High_6hr_Avg'
+    }
+    data = data.rename(columns=rename_map)
 
-    # Ensure necessary columns are present
-    required_columns = ['Humidity_Avg', 'Wind_Speed_Avg', 'Temp_High_6hr']
-    training_data.dropna(subset=required_columns, inplace=True)
+    # Engineer additional features
+    data['Hours_Since_Midnight'] = data['Date'].dt.hour + data['Date'].dt.minute / 60
 
-    # Remove outliers from training data
-    training_data = training_data[
-        (training_data['Humidity_Avg'] >= 0) & (training_data['Humidity_Avg'] <= 100) &
-        (training_data['Wind_Speed_Avg'] >= 0) & (training_data['Wind_Speed_Avg'] <= 100) &
-        (training_data['Temp_High_6hr'] >= -50) & (training_data['Temp_High_6hr'] <= 150)
-    ]
+    # Drop rows with missing essential data
+    data = data.dropna(subset=['Temperature', 'Humidity_Avg', 'Wind_Speed_Avg', 'Temp_High_6hr_Avg'])
 
-    # Prepare training features and target
-    X_train = training_data[['Humidity_Avg', 'Wind_Speed_Avg']]
-    y_train = training_data['Temp_High_6hr']
+    return data
 
-    # Initialize the scaler
+def train_model(data):
+    """
+    Train the Random Forest model.
+
+    Args:
+        data (pd.DataFrame): Processed training data.
+
+    Returns:
+        tuple: Trained model and fitted scaler.
+    """
+    X_train = data[['Temperature', 'Humidity_Avg', 'Wind_Speed_Avg', 'Hours_Since_Midnight']]
+    y_train = data['Temp_High_6hr_Avg']
+
     scaler = StandardScaler()
-
-    # Fit the scaler on training data and transform
     X_train_scaled = scaler.fit_transform(X_train)
 
-    # Train the model on scaled data
-    model = LinearRegression()
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X_train_scaled, y_train)
 
-    for day_offset in range(backtest_days):
-        # Calculate target date
-        target_date = datetime.datetime.now() - datetime.timedelta(days=day_offset + 1)
-        formatted_date = target_date.strftime('* %a %m/%d/%y')
-        print(f"\nProcessing data for {formatted_date}")
+    logging.info("Model training completed.")
+    return model, scaler
 
-        # Fetch historical weather data
-        start_time = target_date.strftime('%Y%m%d0000')
-        end_time = target_date.strftime('%Y%m%d2359')
-        historical_data = get_weather_data(station_id, start_time=start_time, end_time=end_time)
+def fetch_day_data(station_id, date, tz):
+    """
+    Fetch and prepare data for a specific day.
 
-        if historical_data is None or historical_data.empty:
-            print("Unable to fetch historical data for backtesting.")
-            continue
+    Args:
+        station_id (str): Station identifier.
+        date (datetime): Date for which to fetch data.
+        tz (pytz.timezone): Timezone of the station.
 
-        # Rename columns to match training data
-        historical_data.rename(columns={
-            'Humidity': 'Humidity_Avg',
-            'Wind_Speed': 'Wind_Speed_Avg'
-        }, inplace=True)
+    Returns:
+        pd.DataFrame: Prepared data for the day.
+    """
+    start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-        # Ensure necessary columns are present
-        required_columns = ['Humidity_Avg', 'Wind_Speed_Avg', 'Temp_High_6hr', 'Temperature']
-        missing_columns = [col for col in required_columns if col not in historical_data.columns]
-        if missing_columns:
-            print(f"Missing required data for backtesting: {missing_columns}")
-            continue
+    # Convert to UTC and format as strings
+    start_utc = start.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
+    end_utc = end.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
 
-        # Prepare data for prediction
-        X_real_time = historical_data[['Humidity_Avg', 'Wind_Speed_Avg']]
+    historical_data = get_weather_data(station_id, start_time=start_utc, end_time=end_utc)
+    if historical_data is None or historical_data.empty:
+        logging.warning(f"No historical data available for {date.date()}.")
+        return pd.DataFrame()
 
-        # Check for NaN values
-        if X_real_time.isnull().values.any():
-            print("NaN values found in features:")
-            print(X_real_time)
-            X_real_time = X_real_time.dropna()
-            if X_real_time.empty:
-                print("No valid data available after dropping NaNs.")
-                continue
+    # Convert 'Date' to station timezone
+    historical_data['Date'] = pd.to_datetime(historical_data['Date']).dt.tz_convert(tz)
 
-        # Use 'Temp_High_6hr' to find the actual high temperature
-        y_actual = historical_data['Temp_High_6hr'].max()
+    # Prepare features
+    prepared_data = prepare_features(historical_data, ['Temperature', 'Humidity', 'Wind_Speed', 'Temp_High_6hr'], tz)
+    return prepared_data
 
-        # Fetch official high temperature for comparison
-        official_high = official_df[official_df['Date'].dt.date == target_date.date()]['High_Temperature']
-        if not official_high.empty:
-            official_high_temp = official_high.values[0]
-        else:
-            official_high_temp = None
+def fetch_actual_temp(station_id, date, tz):
+    """
+    Fetch the actual high temperature for a specific day.
 
-        # Ensure that official_high_temp is a native Python type
-        if isinstance(official_high_temp, np.generic):
-            official_high_temp = official_high_temp.item()
+    Args:
+        station_id (str): Station identifier.
+        date (datetime): Date for which to fetch actual temperature.
+        tz (pytz.timezone): Timezone of the station.
 
-        # Use Decimal to round temperatures
-        y_actual_rounded = int(Decimal(float(y_actual)).quantize(0, rounding=ROUND_HALF_UP))
-        if official_high_temp is not None:
-            official_high_temp_rounded = int(Decimal(float(official_high_temp)).quantize(0, rounding=ROUND_HALF_UP))
-        else:
-            official_high_temp_rounded = None
+    Returns:
+        int or None: Actual high temperature or None if unavailable.
+    """
+    start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-        try:
-            if X_real_time.empty:
-                print("No valid data to make a prediction for this date.")
-                continue
+    start_utc = start.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
+    end_utc = end.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
 
-            # Ensure the input to predict has the correct feature names
-            # Take the last valid row
-            X_input = X_real_time.iloc[[-1]]
+    actual_data = get_weather_data(station_id, start_time=start_utc, end_time=end_utc)
+    if actual_data is None or actual_data.empty:
+        logging.warning(f"No actual data available for {date.date()}.")
+        return None
 
-            # Scale the input features
-            X_input_scaled = scaler.transform(X_input)
+    actual_high = actual_data['Temp_High_6hr'].max()
+    return int(actual_high) if pd.notnull(actual_high) else None
 
-            # Predict
-            y_predicted = model.predict(X_input_scaled)
-            predicted_high_temp = y_predicted[0]
-            predicted_high_temp_rounded = int(Decimal(float(predicted_high_temp)).quantize(0, rounding=ROUND_HALF_UP))
+def process_day(model, scaler, station_id, day_data, date, actual_temps, predicted_temps, dates):
+    """
+    Process a single day's data: predict and compare with actual.
 
-            # Append results to lists
-            actual_temps.append(y_actual)
-            predicted_temps.append(predicted_high_temp)
-            dates.append(target_date.date())
+    Args:
+        model: Trained Random Forest model.
+        scaler: Fitted StandardScaler.
+        station_id (str): Station identifier.
+        day_data (pd.DataFrame): Prepared data for the day.
+        date (datetime): Date being processed.
+        actual_temps (list): List to append actual temperatures.
+        predicted_temps (list): List to append predicted temperatures.
+        dates (list): List to append dates.
+    """
+    if day_data.empty:
+        logging.warning(f"No data to process for {date.date()}.")
+        actual_temps.append(None)
+        predicted_temps.append(None)
+        dates.append(date.date())
+        return
 
-            # Print the original and rounded temperatures
-            print(f"Fetched High Temperature: {y_actual:.2f} °F ({y_actual_rounded})")
-            print(f"Official High Temperature: {official_high_temp} °F ({official_high_temp_rounded})")
-            print(f"Predicted High Temperature: {predicted_high_temp:.2f} °F ({predicted_high_temp_rounded})")
-        except Exception as e:
-            print(f"An error occurred during prediction: {e}")
-            continue
+    X_input = day_data[['Temperature', 'Humidity_Avg', 'Wind_Speed_Avg', 'Hours_Since_Midnight']]
+    X_scaled = scaler.transform(X_input)
+    prediction = model.predict(X_scaled).mean()
+    rounded_pred = int(Decimal(prediction).quantize(0, rounding=ROUND_HALF_UP))
 
-    # Create a DataFrame to compare results
-    results_df = pd.DataFrame({
+    # Fetch the actual high temperature without calling .mean()
+    actual = fetch_actual_temp(station_id, date, day_data['Date'].dt.tz) if 'Date' in day_data.columns else None
+
+    actual_temps.append(actual)
+    predicted_temps.append(rounded_pred)
+    dates.append(date.date())
+
+def display_results(actual_temps, predicted_temps, dates):
+    """
+    Display and save backtest results.
+
+    Args:
+        actual_temps (list): List of actual temperatures.
+        predicted_temps (list): List of predicted temperatures.
+        dates (list): List of dates.
+    """
+    results = pd.DataFrame({
         'Date': dates,
-        'Fetched_High_Temp': [f"{a:.2f} ({int(Decimal(float(a)).quantize(0, rounding=ROUND_HALF_UP))})" for a in actual_temps],
-        'Official_High_Temp': [
-            f"{official_df[official_df['Date'].dt.date == date]['High_Temperature'].values[0]} ({int(Decimal(float(official_df[official_df['Date'].dt.date == date]['High_Temperature'].values[0])).quantize(0, rounding=ROUND_HALF_UP))})"
-            if not official_df[official_df['Date'].dt.date == date].empty else None for date in dates
-        ],
-        'Predicted_High_Temp': [f"{p:.2f} ({int(Decimal(float(p)).quantize(0, rounding=ROUND_HALF_UP))})" for p in predicted_temps]
+        'Actual High': actual_temps,
+        'Predicted High': predicted_temps
     })
 
-    print("\nComparison of Fetched and Official High Temperatures:")
-    print(results_df)
+    print(results)
+    results.to_csv('backtest_results.csv', index=False)
 
-    # Calculate Mean Absolute Error (MAE) between fetched and predicted temperatures
-    if actual_temps and predicted_temps:
-        mae = sum(abs(a - p) for a, p in zip(actual_temps, predicted_temps)) / len(actual_temps)
-        print(f"\nBacktesting completed. Mean Absolute Error over {len(actual_temps)} days: {mae:.2f} °F")
+    # Calculate metrics excluding None values
+    valid_indices = [i for i, a in enumerate(actual_temps) if a is not None]
+    filtered_actual = [actual_temps[i] for i in valid_indices]
+    filtered_predicted = [predicted_temps[i] for i in valid_indices]
+
+    if filtered_actual:
+        mae = np.mean(np.abs(np.array(filtered_actual) - np.array(filtered_predicted)))
+        rmse = np.sqrt(np.mean((np.array(filtered_actual) - np.array(predicted_temps)[valid_indices]) ** 2))
+        logging.info(f"MAE: {mae:.2f}, RMSE: {rmse:.2f}")
+        print(f"\nMAE: {mae:.2f}, RMSE: {rmse:.2f}")
     else:
-        print("No predictions were made during backtesting.")
+        logging.warning("No valid data to calculate MAE and RMSE.")
+        print("\nNo valid data to calculate MAE and RMSE.")
 
-# Run the backtest
-backtest_predictions(station_id, backtest_days=30)
+def backtest_predictions(station_id, backtest_days=30):
+    """
+    Main function to perform backtesting of temperature predictions.
+
+    Args:
+        station_id (str): Station identifier.
+        backtest_days (int, optional): Number of days to backtest. Defaults to 30.
+    """
+    try:
+        logging.info(f"Starting backtest for the past {backtest_days} days.")
+        print(f"Starting backtest for the past {backtest_days} days...\n")
+
+        actual_temps, predicted_temps, dates = [], [], []
+
+        # Fetch station metadata
+        logging.info("Fetching station metadata.")
+        metadata = get_station_metadata(station_id)
+        if metadata is None:
+            logging.error("Cannot proceed without station metadata.")
+            print("Error: Cannot retrieve station metadata.")
+            return
+
+        timezone_str = metadata.get('timezone', 'UTC')
+        station_tz = pytz.timezone(timezone_str)
+        logging.info(f"Station timezone: {timezone_str}")
+
+        # Define training period: last 60 days up to yesterday
+        now = datetime.now(station_tz)
+        backtest_end_date = now - timedelta(days=1)
+        backtest_start_date = backtest_end_date - timedelta(days=60)
+
+        # Format dates for data fetching
+        start_time_str = backtest_start_date.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
+        end_time_str = backtest_end_date.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
+
+        # Fetch and prepare training data
+        logging.info("Fetching training data.")
+        training_data = get_weather_data(station_id, start_time=start_time_str, end_time=end_time_str)
+        if training_data is None or training_data.empty:
+            logging.error("No training data available.")
+            print("Error: No training data available.")
+            return
+
+        training_data['Date'] = pd.to_datetime(training_data['Date']).dt.tz_convert(station_tz)
+        training_data = prepare_features(training_data, ['Temperature', 'Humidity', 'Wind_Speed', 'Temp_High_6hr'], station_tz)
+
+        if training_data.empty or len(training_data) < 10:
+            logging.error("Insufficient data for model training.")
+            print("Error: Insufficient data for model training.")
+            return
+
+        # Train the model
+        model, scaler = train_model(training_data)
+
+        # Perform backtesting for each day
+        for day_offset in range(backtest_days):
+            target_date = backtest_end_date - timedelta(days=day_offset)
+            day_data = fetch_day_data(station_id, target_date, station_tz)
+            process_day(model, scaler, station_id, day_data, target_date, actual_temps, predicted_temps, dates)
+            print("Data processed successfully.")
+
+        # Display and log the results
+        display_results(actual_temps, predicted_temps, dates)
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        traceback.print_exc()
+        print(f"An unexpected error occurred: {e}")
+
+def main():
+    """Entry point of the script."""
+    station_id = get_station_id()
+    backtest_predictions(station_id)
+
+if __name__ == "__main__":
+    main()
