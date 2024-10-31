@@ -199,20 +199,21 @@ def display_results(actual_temps, predicted_temps, dates):
 
     if filtered_actual:
         mae = np.mean(np.abs(np.array(filtered_actual) - np.array(filtered_predicted)))
-        rmse = np.sqrt(np.mean((np.array(filtered_actual) - np.array(predicted_temps)[valid_indices]) ** 2))
+        rmse = np.sqrt(np.mean((np.array(filtered_actual) - np.array(filtered_predicted)) ** 2))
         logging.info(f"MAE: {mae:.2f}, RMSE: {rmse:.2f}")
         print(f"\nMAE: {mae:.2f}, RMSE: {rmse:.2f}")
     else:
         logging.warning("No valid data to calculate MAE and RMSE.")
         print("\nNo valid data to calculate MAE and RMSE.")
 
-def backtest_predictions(station_id, backtest_days=30):
+def backtest_predictions(station_id, backtest_days=90, training_days=90):
     """
     Main function to perform backtesting of temperature predictions.
 
     Args:
         station_id (str): Station identifier.
-        backtest_days (int, optional): Number of days to backtest. Defaults to 30.
+        backtest_days (int, optional): Number of days to backtest. 
+        training_days (int, optional): Number of days to use for training.
     """
     try:
         logging.info(f"Starting backtest for the past {backtest_days} days.")
@@ -232,25 +233,18 @@ def backtest_predictions(station_id, backtest_days=30):
         station_tz = pytz.timezone(timezone_str)
         logging.info(f"Station timezone: {timezone_str}")
 
-        # Define training period: last 60 days up to yesterday
+        # Define training period: last `training_days` up to yesterday
         now = datetime.now(station_tz)
         backtest_end_date = now - timedelta(days=1)
-        backtest_start_date = backtest_end_date - timedelta(days=60)
-
-        # Format dates for data fetching
-        start_time_str = backtest_start_date.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
-        end_time_str = backtest_end_date.astimezone(pytz.utc).strftime('%Y%m%d%H%M')
+        backtest_start_date = backtest_end_date - timedelta(days=training_days)
 
         # Fetch and prepare training data
         logging.info("Fetching training data.")
-        training_data = get_weather_data(station_id, start_time=start_time_str, end_time=end_time_str)
-        if training_data is None or training_data.empty:
-            logging.error("No training data available.")
-            print("Error: No training data available.")
-            return
-
-        training_data['Date'] = pd.to_datetime(training_data['Date']).dt.tz_convert(station_tz)
-        training_data = prepare_features(training_data, ['Temperature', 'Humidity', 'Wind_Speed', 'Temp_High_6hr'], station_tz)
+        training_data = pd.DataFrame()
+        for day_offset in range(training_days):
+            target_date = backtest_start_date + timedelta(days=day_offset)
+            day_data = fetch_day_data(station_id, target_date, station_tz)
+            training_data = pd.concat([training_data, day_data], ignore_index=True)
 
         if training_data.empty or len(training_data) < 10:
             logging.error("Insufficient data for model training.")
@@ -264,8 +258,9 @@ def backtest_predictions(station_id, backtest_days=30):
         for day_offset in range(backtest_days):
             target_date = backtest_end_date - timedelta(days=day_offset)
             day_data = fetch_day_data(station_id, target_date, station_tz)
+
+            # Process the day's data
             process_day(model, scaler, station_id, day_data, target_date, actual_temps, predicted_temps, dates)
-            print("Data processed successfully.")
 
         # Display and log the results
         display_results(actual_temps, predicted_temps, dates)
