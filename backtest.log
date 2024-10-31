@@ -84,3 +84,21 @@
 2024-10-30 19:54:56,594:INFO:Fetching training data.
 2024-10-30 19:54:58,057:INFO:Model training completed.
 2024-10-30 19:55:44,912:INFO:MAE: 2.67, RMSE: 3.14
+2024-10-31 11:01:22,808:INFO:Starting backtest for the past 30 days.
+2024-10-31 11:01:22,810:INFO:Fetching station metadata.
+2024-10-31 11:01:23,349:INFO:Station timezone: America/Chicago
+2024-10-31 11:01:23,349:INFO:Fetching training data.
+2024-10-31 11:01:25,039:INFO:Model training completed.
+2024-10-31 11:01:52,415:INFO:MAE: 8.67, RMSE: 8.88
+2024-10-31 11:15:09,523:INFO:Starting backtest for the past 30 days.
+2024-10-31 11:15:09,525:INFO:Fetching station metadata.
+2024-10-31 11:15:09,997:INFO:Station timezone: America/Chicago
+2024-10-31 11:15:09,997:INFO:Fetching training data.
+2024-10-31 11:15:16,142:INFO:Model training completed.
+2024-10-31 11:16:07,605:INFO:MAE: 8.67, RMSE: 8.88
+2024-10-31 11:16:20,799:INFO:Starting backtest for the past 30 days.
+2024-10-31 11:16:20,799:INFO:Fetching station metadata.
+2024-10-31 11:16:21,166:INFO:Station timezone: America/New_York
+2024-10-31 11:16:21,166:INFO:Fetching training data.
+2024-10-31 11:16:22,733:INFO:Model training completed.
+2024-10-31 11:16:51,678:INFO:MAE: 2.60, RMSE: 3.10
