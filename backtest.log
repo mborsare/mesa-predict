@@ -102,3 +102,9 @@
 2024-10-31 11:16:21,166:INFO:Fetching training data.
 2024-10-31 11:16:22,733:INFO:Model training completed.
 2024-10-31 11:16:51,678:INFO:MAE: 2.60, RMSE: 3.10
+2024-10-31 22:06:33,117:INFO:Starting backtest for the past 90 days.
+2024-10-31 22:06:33,515:INFO:Fetching training data.
+2024-10-31 22:07:09,831:INFO:Model training completed.
+2024-10-31 22:08:18,239:INFO:MAE: 4.38, RMSE: 4.98
+2024-11-03 10:17:24,282:INFO:Starting backtest for the past 90 days.
+2024-11-03 10:21:49,562:INFO:MAE: 28.09, RMSE: 29.92

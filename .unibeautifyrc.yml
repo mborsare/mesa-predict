@@ -1,0 +1,111 @@
+{
+  "CSS": {
+    "beautifiers": ["Prettier", "Pretty Diff", "JS-Beautify", "CSScomb"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "pragma_insert": true,
+    "end_with_newline": true
+  },
+  "GraphQL": {
+    "beautifiers": ["Prettier"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "pragma_insert": true
+  },
+  "HTML": {
+    "beautifiers": ["Pretty Diff", "JS-Beautify"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "end_with_newline": true,
+    "indent_inner_html": true,
+    "newline_before_tags": [],
+    "wrap_attributes_indent_size": 0
+  },
+  "HTML+ERB": {
+    "beautifiers": ["Pretty Diff"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100
+  },
+  "Handlebars": {
+    "beautifiers": ["Pretty Diff", "JS-Beautify"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "end_with_newline": true,
+    "indent_inner_html": true,
+    "wrap_attributes_indent_size": 0
+  },
+  "JSON5": {
+    "beautifiers": ["Prettier", "Pretty Diff", "JS-Beautify"],
+    "indent_size": 2,
+    "indent_style": "space"
+  },
+  "JSON": {
+    "beautifiers": ["Prettier", "Pretty Diff", "JS-Beautify"],
+    "indent_size": 2,
+    "indent_style": "space"
+  },
+  "JSX": {
+    "beautifiers": ["Prettier", "Pretty Diff", "JS-Beautify", "ESLint"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "pragma_insert": true,
+    "end_with_newline": true,
+    "break_chained_methods": true,
+    "remove_trailing_whitespace": true
+  },
+  "Java": {
+    "beautifiers": ["Pretty Diff"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "break_chained_methods": true
+  },
+  "JavaScript": {
+    "beautifiers": ["Prettier", "Pretty Diff", "JS-Beautify", "ESLint"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "pragma_insert": true,
+    "end_with_newline": true,
+    "break_chained_methods": true,
+    "remove_trailing_whitespace": true
+  },
+  "Markdown": {
+    "beautifiers": ["Prettier"],
+    "wrap_line_length": 100,
+    "pragma_insert": true,
+    "wrap_prose": "always"
+  },
+  "Python": {
+    "beautifiers": ["Black", "YAPF"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100
+  },
+  "SCSS": {
+    "beautifiers": ["Prettier", "Pretty Diff", "CSScomb"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "max_preserve_newlines": 1,
+    "pragma_insert": true
+  },
+  "Sass": {
+    "beautifiers": ["CSScomb"]
+  },
+  "TypeScript": {
+    "beautifiers": ["Prettier", "Pretty Diff", "TSLint"],
+    "indent_size": 2,
+    "indent_style": "space",
+    "wrap_line_length": 100,
+    "max_preserve_newlines": 1,
+    "pragma_insert": true,
+    "break_chained_methods": true
+  }
+}
