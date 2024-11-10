@@ -18,197 +18,67 @@ from .models import (
 )
 from .config import Config, setup_logging, APIConfig
 from .mesowest import MesoWestClient
+from .prediction import TemperaturePredictor
 from .analyzer import TemperatureAnalyzer
-from .predictor import TemperaturePredictor
+
+@dataclass
+class BacktestResult:
+    """Single backtest result."""
+    date: datetime
+    actual_high: Optional[Tuple[float, datetime, DataSource]]
+    prediction: Optional[float]
+    confidence: Optional[float]
+    error: Optional[float]
+    data_sources: List[DataSource]
+
+@dataclass
+class BacktestSummary:
+    """Summary of backtest results."""
+    station_id: StationId
+    start_date: datetime
+    end_date: datetime
+    total_days: int
+    valid_days: int
+    mae: Decimal
+    rmse: Decimal
+    bias: Decimal
+    confidence_correlation: Decimal
+    ml_contribution: Decimal
+    tomorrow_contribution: Decimal
+    results: List[BacktestResult]
 
 class MockTomorrowClient:
-    """Mock client that provides historical data for backtesting with 6-hour constraint."""
+    """Mock client for backtesting that doesn't make real API calls."""
 
     def __init__(self, config: APIConfig, logger: Optional[logging.Logger] = None):
         self.config = config
         self.logger = logger or logging.getLogger(__name__)
-        self._session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self) -> 'MockTomorrowClient':
-        timeout = aiohttp.ClientTimeout(total=self.config.timeout)
-        self._session = aiohttp.ClientSession(timeout=timeout)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self._session:
-            await self._session.close()
-            self._session = None
+        pass
 
     async def get_historical_data(
         self,
         station: StationMetadata,
         target_date: datetime
     ) -> Optional[Dict[str, Any]]:
-        """Get historical weather data from Tomorrow.io, limited to 6 hours."""
-        if not self._session:
-            raise DataSourceError("Client session not initialized")
-
-        try:
-            # Get only 6 hours of historical data before target time
-            start_time = (target_date - timedelta(hours=6)).strftime('%Y-%m-%dT%H:%M:%SZ')
-            end_time = target_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-            params = {
-                "location": f"{station.latitude},{station.longitude}",
-                "fields": ["temperature", "humidity", "windSpeed", "windDirection"],
-                "timesteps": "1h",
-                "startTime": start_time,
-                "endTime": end_time,
-                "apikey": self.config.token,
-                "units": "imperial"
-            }
-
-            async with self._session.get(
-                f"{self.config.base_url}/timelines",
-                params=params
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
-
-        except Exception as e:
-            self.logger.error(f"Failed to get Tomorrow.io historical data: {e}")
-            return None
+        """Return None for historical data during backtesting."""
+        return None
 
     async def get_daily_high_prediction(
         self,
         station: StationMetadata,
         date: datetime
     ) -> Optional[TemperatureReading]:
-        """Get historical high temperature from 6-hour window for backtesting."""
-        try:
-            # Use noon as the target time to get afternoon temperatures
-            target_time = date.replace(hour=12, minute=0, second=0, microsecond=0)
-            data = await self.get_historical_data(station, target_time)
-
-            if not data or 'data' not in data:
-                return None
-
-            # Extract temperature values from the 6-hour window
-            temperatures = []
-            for interval in data['data']['timelines'][0]['intervals']:
-                interval_time = datetime.fromisoformat(
-                    interval['time'].replace('Z', '+00:00')
-                )
-                if 'temperature' in interval['values']:
-                    temperatures.append(interval['values']['temperature'])
-
-            if not temperatures:
-                return None
-
-            max_temp = max(temperatures)
-            return TemperatureReading(
-                value=Temperature(Decimal(str(max_temp))),
-                timestamp=target_time,
-                source=DataSource.TOMORROW_IO,
-                unit=TemperatureUnit.FAHRENHEIT,
-                station_id=station.station_id
-            )
-
-        except Exception as e:
-            self.logger.error(f"Failed to get historical high: {e}")
-            return None
-
-    def __init__(self, config: APIConfig, logger: Optional[logging.Logger] = None):
-        self.config = config
-        self.logger = logger or logging.getLogger(__name__)
-        self._session: Optional[aiohttp.ClientSession] = None
-
-    async def __aenter__(self) -> 'MockTomorrowClient':
-        timeout = aiohttp.ClientTimeout(total=self.config.timeout)
-        self._session = aiohttp.ClientSession(timeout=timeout)
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self._session:
-            await self._session.close()
-            self._session = None
-
-    async def get_historical_data(
-        self,
-        station: StationMetadata,
-        target_date: datetime
-    ) -> Optional[Dict[str, Any]]:
-        """Get historical weather data from Tomorrow.io."""
-        if not self._session:
-            raise DataSourceError("Client session not initialized")
-
-        try:
-            # Get 7 days of historical data before target date
-            start_time = (target_date - timedelta(days=7)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).strftime('%Y-%m-%dT%H:%M:%SZ')
-            end_time = target_date.replace(
-                hour=23, minute=59, second=59
-            ).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-            params = {
-                "location": f"{station.latitude},{station.longitude}",
-                "fields": ["temperature", "humidity", "windSpeed", "windDirection"],
-                "timesteps": "1h",
-                "startTime": start_time,
-                "endTime": end_time,
-                "apikey": self.config.token,
-                "units": "imperial"
-            }
-
-            async with self._session.get(
-                f"{self.config.base_url}/timelines",
-                params=params
-            ) as response:
-                response.raise_for_status()
-                return await response.json()
-
-        except Exception as e:
-            self.logger.error(f"Failed to get Tomorrow.io historical data: {e}")
-            return None
+        """Return None for predictions during backtesting."""
+        return None
 
     async def get_forecast(self, *args, **kwargs):
-        """Don't provide forecasts during backtesting."""
+        """Return empty list during backtesting."""
         return []
-
-    async def get_daily_high_prediction(
-        self,
-        station: StationMetadata,
-        date: datetime
-    ) -> Optional[TemperatureReading]:
-        """Get historical high temperature for backtesting."""
-        try:
-            data = await self.get_historical_data(station, date)
-            if not data or 'data' not in data:
-                return None
-
-            # Extract temperature values for the target date
-            target_temps = []
-            for interval in data['data']['timelines'][0]['intervals']:
-                interval_time = datetime.fromisoformat(
-                    interval['time'].replace('Z', '+00:00')
-                )
-                if interval_time.date() == date.date():
-                    if 'temperature' in interval['values']:
-                        target_temps.append(interval['values']['temperature'])
-
-            if not target_temps:
-                return None
-
-            max_temp = max(target_temps)
-            return TemperatureReading(
-                value=Temperature(Decimal(str(max_temp))),
-                timestamp=date,
-                source=DataSource.TOMORROW_IO,
-                unit=TemperatureUnit.FAHRENHEIT,
-                station_id=station.station_id
-            )
-
-        except Exception as e:
-            self.logger.error(f"Failed to get historical high: {e}")
-            return None
-
-# Keep all your existing BacktestResult and BacktestSummary classes
 
 async def get_daily_high(
     mesowest: MesoWestClient,
@@ -255,19 +125,12 @@ async def run_backtest(station_id: str, days: int = 21) -> None:
         async with MesoWestClient(config.mesowest, logger) as mesowest:
             async with MockTomorrowClient(config.tomorrow_io, logger) as tomorrow:
                 # Get station metadata
-                station = await mesowest.get_station_metadata(
-                    StationId(station_id.upper())
-                )
+                station = await mesowest.get_station_metadata(StationId(station_id.upper()))
                 logger.info(f"Starting backtest for {station_id} over {days} days")
 
                 # Initialize components
                 analyzer = TemperatureAnalyzer(logger)
-                predictor = TemperaturePredictor(
-                    mesowest=mesowest,
-                    tomorrow=tomorrow,
-                    analyzer=analyzer,
-                    logger=logger
-                )
+                predictor = TemperaturePredictor(mesowest, tomorrow, analyzer, logger)
 
                 # Process each day
                 results = []
@@ -313,7 +176,7 @@ async def run_backtest(station_id: str, days: int = 21) -> None:
                     except Exception as e:
                         logger.error(f"Failed to backtest {target_date.date()}: {e}")
 
-                # Calculate summary statistics
+                # Calculate summary statistics if we have valid results
                 valid_results = [r for r in results if r.error is not None]
 
                 if valid_results:
@@ -326,6 +189,7 @@ async def run_backtest(station_id: str, days: int = 21) -> None:
                     ml_used = sum(1 for r in valid_results if DataSource.ML_MODEL in r.data_sources)
                     tomorrow_used = sum(1 for r in valid_results if DataSource.TOMORROW_IO in r.data_sources)
 
+                    # Create summary
                     summary = BacktestSummary(
                         station_id=station.station_id,
                         start_date=end_date - timedelta(days=days),
@@ -345,6 +209,7 @@ async def run_backtest(station_id: str, days: int = 21) -> None:
                     output_dir = Path('backtest_results')
                     output_dir.mkdir(exist_ok=True)
 
+                    # Create DataFrame for CSV output
                     df = pd.DataFrame([
                         {
                             'Date': r.date.date(),
