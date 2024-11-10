@@ -1,99 +1,43 @@
-# Byte-compiled / optimized / DLL files
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # Environment variables
 .env
-.env.*
 
-# Flask configuration files
-instance/
-*.cfg
-*.ini
-
-# Virtual environment
-venv/
-ENV/
-.venv/
-env/
-.ENV/
-
-# Python egg files
-*.egg
-*.egg-info/
-dist/
-build/
-eggs/
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Pytest cache
-.pytest_cache/
-
-# Coverage reports
-.coverage
-.tox/
-.coverage.*
-htmlcov/
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
-
-# IDE and editor specific files
-.vscode/
+# IDE
 .idea/
-*.sublime-project
-*.sublime-workspace
-
-# MacOS specific files
-.DS_Store
-
-# Database files
-*.sqlite3
-*.db
-
-# Logs and debug files
-*.log
-logs/
-debug.log
-
-# Static file builds
-staticfiles/
-static/
-node_modules/
-
-# Compiled CSS
-*.css.map
-*.sass-cache/
-
-# Ignore test reports and temporary files
-*.out
-*.pid
+.vscode/
 *.swp
 *.swo
 
-# Flask-specific files
-instance/
-config.py
+# Logs
+*.log
+logs/
+backtest_results/
 
-# Ignore Docker files (if using Docker)
-docker-compose.yml
-docker-compose.*.yml
-Dockerfile
-
-# Ignore migrations if using Flask-Migrate
-migrations/
-
-# Ignore lockfiles
-Pipfile.lock
-poetry.lock
-yarn.lock
-package-lock.json
-__pycache__
+# OS
+.DS_Store
+Thumbs.db
