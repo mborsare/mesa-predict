@@ -7,15 +7,15 @@ from datetime import datetime, time
 import pytz
 from decimal import Decimal
 
-from .models import (
+from weather_prediction.models import (
     StationId, StationMetadata, Latitude, Longitude,
     WeatherError, ValidationError, DataSource
 )
-from .config import Config, setup_logging
-from .mesowest import MesoWestClient
-from .tomorrow import TomorrowClient
-from .analyzer import TemperatureAnalyzer
-from .predictor import TemperaturePredictor
+from weather_prediction.config import Config, setup_logging
+from weather_prediction.mesowest import MesoWestClient
+from weather_prediction.tomorrow import TomorrowClient
+from weather_prediction.analyzer import TemperatureAnalyzer
+from weather_prediction.prediction.temperature_predictor import TemperaturePredictor
 
 def format_temperature_output(
     prediction,
